@@ -4,7 +4,7 @@ import path from 'path'
 import crypto from 'crypto'
 import { fileURLToPath } from 'url'
 
-const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'change_this_secret'
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || ''
 
 export const createServer = (getSock, queueMessage) => {
 	const app = express()
@@ -27,18 +27,20 @@ export const createServer = (getSock, queueMessage) => {
 
 				if (typeof module.default === 'function' && app[method]) {
 					app[method](route, (req, res) => {
-						const providedSig = req.get('X-Signature')
-
-						if (!providedSig) {
-							return res.status(400).send('Missing signature')
-						}
-
-						const expectedSig = crypto.createHmac('sha256', WEBHOOK_SECRET)
-							.update(req.rawBody)
-							.digest('hex')
-
-						if (providedSig !== expectedSig) {
-							return res.status(403).send('Invalid signature')
+						if (WEBHOOK_SECRET){
+							const providedSig = req.get('X-Signature')
+	
+							if (!providedSig) {
+								return res.status(400).send('Missing signature')
+							}
+	
+							const expectedSig = crypto.createHmac('sha256', WEBHOOK_SECRET)
+								.update(req.rawBody)
+								.digest('hex')
+	
+							if (providedSig !== expectedSig) {
+								return res.status(403).send('Invalid signature')
+							}
 						}
 
 						module.default(req, res, getSock(), queueMessage)
