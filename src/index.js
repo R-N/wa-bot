@@ -1,0 +1,69 @@
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { logger } from './util.js'
+import { createReadline, startSock } from './socket.js'
+import { createMessagingHelpers } from './messaging.js'
+import { createServer } from './server.js'
+
+const { rl, question } = createReadline()
+
+var sock = null
+var auth_info = null
+
+const getSock = () => sock
+
+const { queueMessage } = createMessagingHelpers(getSock)
+
+// Use Map to support multiple handlers per event
+const handlers = new Map()
+
+const registerHandler = (event, fn) => {
+	if (!handlers.has(event)) handlers.set(event, [])
+	handlers.get(event).push(fn)
+}
+
+const loadHandlers = async () => {
+	const __dirname = path.dirname(fileURLToPath(import.meta.url))
+	const handlersDir = path.join(__dirname, 'handlers')
+
+	const files = fs.readdirSync(handlersDir).filter(f => f.endsWith('.js'))
+
+	for (const file of files) {
+		const module = await import(`./handlers/${file}`)
+		if (!module.event || typeof module.default !== 'function') {
+			console.warn(`Skipping invalid handler: ${file}`)
+			continue
+		}
+		registerHandler(module.event, module.default)
+		console.log(`Loaded handler for '${module.event}' from ${file}`)
+	}
+}
+
+const restartSock = async () => {
+	({ sock, auth_info } = await startSock(logger))
+
+	sock.ev.process(async (events) => {
+		for (const [eventName, eventData] of Object.entries(events)) {
+			const callbacks = handlers.get(eventName) || []
+			for (const cb of callbacks) {
+				await cb(eventData, { getSock, queueMessage, auth_info,
+					saveCreds: auth_info.saveCreds, 
+					restart: restartSock 
+				})
+			}
+		}
+	})
+}
+
+const main = async () => {
+	await loadHandlers()
+	await restartSock()
+
+	const app = createServer(getSock, queueMessage)
+	app.listen(3000, () => {
+		console.log('Webhook server running on port 3000')
+	})
+}
+
+main()

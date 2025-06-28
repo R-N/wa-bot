@@ -1,0 +1,17 @@
+{
+  "name": "wa-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "main": "src/index.js",
+  "author": "Muhammad Rizqi Nur <rizqinur2010@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.18",
+    "express": "^5.1.0",
+    "pino": "^9.7.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
