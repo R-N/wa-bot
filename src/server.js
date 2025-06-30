@@ -5,6 +5,7 @@ import crypto from 'crypto'
 import { fileURLToPath } from 'url'
 
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || ''
+const HMAC_ENCODING = "base64"
 
 export const createServer = (getSock, queueMessage) => {
 	const app = express()
@@ -36,7 +37,7 @@ export const createServer = (getSock, queueMessage) => {
 	
 							const expectedSig = crypto.createHmac('sha256', WEBHOOK_SECRET)
 								.update(req.rawBody)
-								.digest('hex')
+								.digest(HMAC_ENCODING)
 	
 							if (providedSig !== expectedSig) {
 								return res.status(403).send('Invalid signature')
