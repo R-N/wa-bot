@@ -18,6 +18,12 @@ const { queueMessage } = createMessagingHelpers(getSock)
 // Use Map to support multiple handlers per event
 const handlers = new Map()
 
+const blacklistEnv = process.env.HANDLER_BLACKLIST || ''
+const whitelistEnv = process.env.HANDLER_WHITELIST || ''
+
+const blacklist = blacklistEnv.split(',').map(f => f.trim()).filter(Boolean)
+const whitelist = whitelistEnv.split(',').map(f => f.trim()).filter(Boolean)
+
 const registerHandler = (event, fn) => {
 	if (!handlers.has(event)) handlers.set(event, [])
 	handlers.get(event).push(fn)
@@ -30,8 +36,20 @@ const loadHandlers = async () => {
 	const files = fs.readdirSync(handlersDir).filter(f => f.endsWith('.js'))
 
 	for (const file of files) {
+		const fileName = file.replace('.js', '')
+
+		if (blacklist.includes(fileName)) {
+			console.log(`Skipped blacklisted handler: ${file}`)
+			continue
+		}
+
+		if (whitelist.length > 0 && !whitelist.includes(fileName)) {
+			console.log(`Skipped non-whitelisted handler: ${file}`)
+			continue
+		}
+
 		const module = await import(`./handlers/${file}`)
-		
+
 		if (module.enabled === false) {
 			console.log(`Skipped disabled handler: ${file}`)
 			continue
@@ -54,9 +72,12 @@ const restartSock = async () => {
 		for (const [eventName, eventData] of Object.entries(events)) {
 			const callbacks = handlers.get(eventName) || []
 			for (const cb of callbacks) {
-				await cb(eventData, { getSock, queueMessage, auth_info,
-					saveCreds: auth_info.saveCreds, 
-					restart: restartSock 
+				await cb(eventData, {
+					getSock,
+					queueMessage,
+					auth_info,
+					saveCreds: auth_info.saveCreds,
+					restart: restartSock
 				})
 			}
 		}

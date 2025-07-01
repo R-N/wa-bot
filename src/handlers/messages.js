@@ -8,6 +8,12 @@ export const enabled = true
 
 const messageHandlers = []
 
+const blacklistEnv = process.env.MESSAGE_HANDLER_BLACKLIST || ''
+const whitelistEnv = process.env.MESSAGE_HANDLER_WHITELIST || ''
+
+const blacklist = blacklistEnv.split(',').map(f => f.trim()).filter(Boolean)
+const whitelist = whitelistEnv.split(',').map(f => f.trim()).filter(Boolean)
+
 const loadMessageHandlers = async () => {
 	const __dirname = path.dirname(fileURLToPath(import.meta.url))
 	const dir = path.join(__dirname, 'messages')
@@ -15,8 +21,20 @@ const loadMessageHandlers = async () => {
 	const files = fs.readdirSync(dir).filter(f => f.endsWith('.js'))
 
 	for (const file of files) {
+		const fileName = file.replace('.js', '')
+
+		if (blacklist.includes(fileName)) {
+			console.log(`Skipped blacklisted message handler: ${file}`)
+			continue
+		}
+
+		if (whitelist.length > 0 && !whitelist.includes(fileName)) {
+			console.log(`Skipped non-whitelisted message handler: ${file}`)
+			continue
+		}
+
 		const module = await import(`./messages/${file}`)
-		
+
 		if (module.enabled === false) {
 			console.log(`Skipped disabled message handler: ${file}`)
 			continue
