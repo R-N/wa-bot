@@ -1,6 +1,7 @@
 import qrcode from 'qrcode-terminal'
 
 export const event = 'connection.update'
+export const enabled = true
 
 export default (update, { restart }) => {
 	const { connection, qr } = update

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import { isJidNewsletter } from '@whiskeysockets/baileys'
 
 export const event = 'messages.upsert'
+export const enabled = true
 
 const messageHandlers = []
 
@@ -15,10 +16,17 @@ const loadMessageHandlers = async () => {
 
 	for (const file of files) {
 		const module = await import(`./messages/${file}`)
+		
+		if (module.enabled === false) {
+			console.log(`Skipped disabled message handler: ${file}`)
+			continue
+		}
+
 		if (typeof module.default !== 'function' || typeof module.priority !== 'number') {
 			console.warn(`Skipping invalid message handler: ${file}`)
 			continue
 		}
+
 		messageHandlers.push({ fn: module.default, priority: module.priority })
 		console.log(`Loaded message handler from ${file} with priority ${module.priority}`)
 	}
@@ -38,7 +46,7 @@ export default async (upsert, { getSock, queueMessage }) => {
 			continue
 		}
 
-    const sock = getSock()
+		const sock = getSock()
 
 		console.log('processing message from', msg.key.remoteJid)
 		await sock.readMessages([msg.key])

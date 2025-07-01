@@ -23,6 +23,11 @@ export const createServer = (getSock, queueMessage) => {
 	fs.readdirSync(webhooksDir).forEach(file => {
 		if (file.endsWith('.js')) {
 			import(`./webhooks/${file}`).then(module => {
+				if (module.enabled === false) {
+					console.log(`Skipped disabled webhook: ${file}`)
+					return
+				}
+
 				const route = module.path || `/${file.replace('.js', '')}`
 				const method = (module.method || 'post').toLowerCase()
 

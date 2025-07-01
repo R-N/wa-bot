@@ -1,5 +1,6 @@
 export const method = 'post'
 export const path = '/send-message'
+export const enabled = true
 
 export default (req, res, sock, queueMessage) => {
 	const { phone, message } = req.body

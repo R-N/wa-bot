@@ -31,10 +31,17 @@ const loadHandlers = async () => {
 
 	for (const file of files) {
 		const module = await import(`./handlers/${file}`)
+		
+		if (module.enabled === false) {
+			console.log(`Skipped disabled handler: ${file}`)
+			continue
+		}
+
 		if (!module.event || typeof module.default !== 'function') {
 			console.warn(`Skipping invalid handler: ${file}`)
 			continue
 		}
+
 		registerHandler(module.event, module.default)
 		console.log(`Loaded handler for '${module.event}' from ${file}`)
 	}
