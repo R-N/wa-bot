@@ -35,7 +35,7 @@ const loadMessageHandlers = async () => {
 
 		const module = await import(`./messages/${file}`)
 
-		if (module.enabled === false) {
+		if (module.enabled === false && !whitelist.includes(fileName)) {
 			console.log(`Skipped disabled message handler: ${file}`)
 			continue
 		}

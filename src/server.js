@@ -41,7 +41,7 @@ export const createServer = (getSock, queueMessage) => {
 			}
 
 			import(`./webhooks/${file}`).then(module => {
-				if (module.enabled === false) {
+				if (module.enabled === false && !whitelist.includes(fileName)) {
 					console.log(`Skipped disabled webhook: ${file}`)
 					return
 				}

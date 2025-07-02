@@ -50,7 +50,7 @@ const loadHandlers = async () => {
 
 		const module = await import(`./handlers/${file}`)
 
-		if (module.enabled === false) {
+		if (module.enabled === false && !whitelist.includes(fileName)) {
 			console.log(`Skipped disabled handler: ${file}`)
 			continue
 		}
