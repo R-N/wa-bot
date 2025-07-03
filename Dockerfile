@@ -16,4 +16,7 @@ RUN sh setup.sh
 
 WORKDIR /app
 
+RUN [ -f entrypoint.sh ] || (echo "ERROR: entrypoint.sh missing!" && exit 1)
+RUN [ -f /app/entrypoint.sh ] || (echo "ERROR: /app/entrypoint.sh missing!" && exit 1)
+
 ENTRYPOINT ["/app/entrypoint.sh"]
