@@ -7,9 +7,13 @@ import { LLMClient } from '../../llm/client.js';
 export const priority = 0;
 export const enabled = false;
 
-const llmClient = new LLMClient({
-  url: process.env.LLM_SERVER_URL, 
-  role: process.env.LLM_ROLE_FILE
+const llmQuery = new LLMClient({
+  url: process.env.LLM_QUERY_SERVER_URL, 
+  role: process.env.LLM_QUERY_ROLE_FILE
+});
+const llmReply = new LLMClient({
+  url: process.env.LLM_REPLY_SERVER_URL, 
+  role: process.env.LLM_REPLY_ROLE_FILE
 });
 
 let initialized = false;
@@ -24,7 +28,6 @@ export const init = async () => {
     }
   } catch (err) {
     console.error('Engine init failed:', err);
-    queueReply({ text: 'Gagal memuat basis pengetahuan.' });
     return true;
   }
 };
@@ -45,10 +48,26 @@ const engine = new KnowledgeBaseEngine(
 
 export default async (msg, { text, senderId, groupId, queueReply, sessionManager }) => {
   if (!text) return false;
+  const chatHistory = await sessionManager.getChatHistory(senderId, groupId);
+  const chatHistoryQuery = chatHistory.filter(({ senderId }) => senderId != null);
+
+  console.log("chatHistoryQuery: " );
+  console.log(chatHistoryQuery);
+  let query;
+  try {
+    query = await llmQuery.generateReply(chatHistoryQuery);
+  } catch (err) {
+    console.error('LLM query fallback:', err);
+    query = chatHistoryQuery
+      .map(({ message }) => message)
+      .join('\n');
+  }
+
+  console.log("query: " + query);
 
   let hits;
   try {
-    hits = await engine.query(text);
+    hits = await engine.query(query);
     if (hits.length == 0){
       queueReply({ text: 'Maaf, saya tidak menemukan jawaban.' });
       return true;
@@ -70,15 +89,12 @@ export default async (msg, { text, senderId, groupId, queueReply, sessionManager
     footer += "\n\Link form request: \n" + article.metadata.request + "\n";
   }
 
-  const chatHistory = await sessionManager.getChatHistory(senderId, groupId);
-
   // Call llama
   try {
-    const llamaOutput = await llmClient.generateReply(chatHistory, articleContent);
+    const llamaOutput = await llmReply.generateReply(chatHistory, articleContent);
     queueReply({ text: llamaOutput + footer });
   } catch (err) {
-    console.error('LLaMA fallback:', err);
-
+    console.error('LLM reply fallback:', err);
     queueReply({ text: articleContent + footer });
   }
 

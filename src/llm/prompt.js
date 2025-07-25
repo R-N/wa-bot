@@ -16,6 +16,27 @@ export class PromptBuilder {
   getRole(sender){
     return sender ? 'user' : 'assistant';
   }
+
+  buildSystemPart(article=null){
+    let systemParts = [];
+    if (this.role){
+      systemParts.push(this.role);
+    }
+    if (article) {
+      if (systemParts.length){
+        systemParts.push(`
+
+          -------
+
+        `);
+      }
+      systemParts.push(`
+        ### Artikel:
+        ${article}
+      `);
+    }
+    return systemParts;
+  }
   /**
    * Format as OpenAI-style ChatML prompt
    */
@@ -25,15 +46,13 @@ export class PromptBuilder {
 
     const messages = [];
 
-    // System message (role + article)
-    let content = this.role;
-    if (article) {
-      content += `\n\nArtikel:\n${article}`;
+    let systemParts = this.buildSystemPart(article);
+    if (systemParts.length){
+      messages.push({
+        role: 'system',
+        content: systemParts.join("\n\n")
+      });
     }
-    messages.push({
-      role: 'system',
-      content
-    });
 
     // Chat history
     for (const { senderId, message } of chatHistory) {
@@ -56,24 +75,27 @@ export class PromptBuilder {
     const history = chatHistory.map(({ senderId, message }) => {
       const role = this.getRole(senderId);
       return `
-      <|im_start|>${role}
-      ${message.trim()}
-      <|im_end|>
+        <|im_start|>${role}
+        ${message.trim()}
+        <|im_end|>
       `;
     });
 
-    const systemParts = [`<|im_start|>system`, this.role];
-    if (article) {
-      systemParts.push(`
-        ------
-        
-        Artikel:
-        ${article}
-      `);
+    let systemParts = this.buildSystemPart(article);
+    if (systemParts.length){
+      systemParts = [
+        `<|im_start|>system`,
+        ...systemParts,
+        `<|im_end|>`
+      ];
     }
-    systemParts.push(`<|im_end|>`);
 
-    return [systemParts.join('\n'), ...history, `<|im_start|>assistant`].join('\n');
+
+    return [
+      systemParts.join('\n'), 
+      history.join('\n'), 
+      `<|im_start|>assistant`
+    ].join('\n\n');
   }
 
   /**
@@ -83,22 +105,33 @@ export class PromptBuilder {
     article = article || this.article;
     chatHistory = chatHistory || this.chatHistory;
 
-    const history = chatHistory.map(({ sender, message }) => {
-      return `### ${sender}:\n${message.trim()}`;
+    let history = chatHistory.map(({ senderId, message }) => {
+      return `
+        ### ${this.getRole(senderId)}:
+        ${message.trim()}
+      `;
     });
-
-    const parts = [
-      `## Peran:\n${this.role}`,
-      '------',
-    ];
-
-    if (article) {
-      parts.push(`## Artikel:\n${article}`, '------');
+    if (history.length){
+      history = [
+        `## Riwayat percakapan:`,
+        ...history,
+      ];
     }
 
-    parts.push(`## Riwayat percakapan:\n${history.join('\n\n')}`, '### Jawaban IT Support: \n');
+    
+    let systemParts = this.buildSystemPart(article);
+    if (systemParts.length){
+      systemParts = [
+        `## Peran:`,
+        ...systemParts,
+      ];
+    }
 
-    return parts.join('\n\n').trim();
+    return [
+      systemParts.join('\n'), 
+      history.join('\n'), 
+      `### Jawaban IT Support:`
+    ].join('\n\n');
   }
 }
 export default PromptBuilder;

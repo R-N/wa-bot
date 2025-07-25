@@ -72,7 +72,7 @@ const loadHandlers = async () => {
 const restartSock = async () => {
 	({ sock, auth_info } = await startSock(logger))
 
-	const botId = sock.user.id || auth_info.state.creds.me.id;
+	const botId = auth_info.state.creds.me.id || sock.user.id;
 	console.log(botId);
 	const sessionManager = new ChatSessionManager(
 		botId
