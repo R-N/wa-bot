@@ -13,7 +13,10 @@ export class ChatSessionManager {
     try {
       const redisClient = createClient({ 
         url: this.redisUrl,
-        reconnectStrategy: false,
+        socket: {
+          connectTimeout: 2000,
+          reconnectStrategy: () => false,
+        },
       });
       // redisClient.on('error', (err) => console.error('Redis Client Error', err));
       await redisClient.connect();
