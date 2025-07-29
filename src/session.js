@@ -15,7 +15,7 @@ export class ChatSessionManager {
         url: this.redisUrl,
         reconnectStrategy: false,
       });
-      redisClient.on('error', (err) => console.error('Redis Client Error', err));
+      // redisClient.on('error', (err) => console.error('Redis Client Error', err));
       await redisClient.connect();
       this.client = redisClient;
     } catch (err) {
