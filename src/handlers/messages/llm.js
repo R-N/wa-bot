@@ -9,11 +9,11 @@ export const enabled = false;
 
 const llmQuery = new LLMClient({
   url: process.env.LLM_QUERY_SERVER_URL, 
-  role: process.env.LLM_QUERY_ROLE_FILE
+  role: process.env.LLM_QUERY_ROLE_FILE || "./assets/roles/query.txt"
 });
 const llmReply = new LLMClient({
   url: process.env.LLM_REPLY_SERVER_URL, 
-  role: process.env.LLM_REPLY_ROLE_FILE
+  role: process.env.LLM_REPLY_ROLE_FILE || "./assets/roles/reply.txt"
 });
 
 let initialized = false;
@@ -51,8 +51,6 @@ export default async (msg, { text, senderId, groupId, queueReply, sessionManager
   const chatHistory = await sessionManager.getChatHistory(senderId, groupId);
   const chatHistoryQuery = chatHistory.filter(({ senderId }) => senderId != null);
 
-  console.log("chatHistoryQuery: " );
-  console.log(chatHistoryQuery);
   let query;
   try {
     query = await llmQuery.generateReply(chatHistoryQuery);

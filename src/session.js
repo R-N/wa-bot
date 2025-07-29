@@ -1,18 +1,27 @@
-import redis from 'redis';
-import { createClient } from 'redis'; 
-
-const SESSION_TTL = 15 * 60; 
+import { createClient } from 'redis';
+import { InMemoryRedis } from './memory.js'; // Adjust path
 
 export class ChatSessionManager {
   constructor(botId, redisUrl = null) {
     redisUrl = redisUrl || process.env.REDIS_URL;
-    this.client = createClient({ url: redisUrl });
     this.botId = botId;
+    this.redisUrl = redisUrl;
+    this.client = null;
   }
 
   async init() {
-    this.client.on('error', (err) => console.error('Redis Client Error', err));
-    await this.client.connect();
+    try {
+      const redisClient = createClient({ 
+        url: this.redisUrl,
+        reconnectStrategy: false,
+      });
+      redisClient.on('error', (err) => console.error('Redis Client Error', err));
+      await redisClient.connect();
+      this.client = redisClient;
+    } catch (err) {
+      console.warn('Redis unavailable. Falling back to in-memory store.');
+      this.client = new InMemoryRedis();
+    }
   }
 
   sessionKey(senderId, groupId) {

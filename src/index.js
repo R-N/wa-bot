@@ -74,10 +74,16 @@ const restartSock = async () => {
 
 	const botId = auth_info.state.creds.me.id || sock.user.id;
 	console.log(botId);
-	const sessionManager = new ChatSessionManager(
-		botId
-	);
-	await sessionManager.init();
+	let sessionManager = null;
+	try{
+		sessionManager = new ChatSessionManager(
+			botId
+		);
+		await sessionManager.init();
+	}catch(err){
+		console.error(err);
+		sessionManager = null;
+	}
 
 	sock.ev.process(async (events) => {
 		for (const [eventName, eventData] of Object.entries(events)) {

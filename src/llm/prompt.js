@@ -8,7 +8,7 @@ export class PromptBuilder {
     this.chatHistory = chatHistory;
     
     const filePath = path.resolve(this.role);
-    if (fs.existsSync(filePath)) {
+    if (filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       this.role = fs.readFileSync(filePath, 'utf-8');
     }
   }
