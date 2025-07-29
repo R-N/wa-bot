@@ -14,7 +14,7 @@ export class ChatSessionManager {
       const redisClient = createClient({ 
         url: this.redisUrl,
         socket: {
-          connectTimeout: 2000,
+          // connectTimeout: 2000,
           reconnectStrategy: () => false,
         },
       });
